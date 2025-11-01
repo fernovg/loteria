@@ -1,0 +1,47 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Lotería De Los Vegas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding" *ngIf="cartas.length">
+
+  @if (cartaActual) {
+  <div class="carta-container" [class.animar]="animarCarta">
+    <img [src]="cartaActual.imagen" alt="{{cartaActual.nombre}}">
+    <h2>{{ cartaActual.nombre }}</h2>
+  </div>
+  }
+
+  <div *ngIf="juegoTerminado" class="mensaje-final">
+    <h2>🎉 ¡Lotería completada! 🎉</h2>
+    <p>Se han cantado todas las cartas.</p>
+
+    <ion-button expand="block" color="success" (click)="reiniciarJuego()">
+      🔄 Reiniciar juego
+    </ion-button>
+  </div>
+
+  <div *ngIf="!juegoTerminado">
+    <ion-button  color="success" (click)="iniciarJuego()" [disabled]="jugando && !pausado">
+      {{ pausado ? 'Reanudar' : 'Iniciar' }}
+    </ion-button>
+
+    <ion-button color="warning" (click)="pausarJuego()" [disabled]="!jugando || pausado">
+      Pausar
+    </ion-button>
+
+    <ion-button color="danger" (click)="terminarJuego()" [disabled]="!jugando">
+      Detener
+    </ion-button>
+  </div>
+
+  <h3 *ngIf="cartasCantadas.length" class="titulo-lista">Cartas ya cantadas ({{ cartasCantadas.length }})</h3>
+
+  <div class="grid-cartas">
+    <div *ngFor="let carta of cartasCantadas" class="carta-mini">
+      <img [src]="carta.imagen" [alt]="carta.nombre">
+      <p>{{ carta.nombre }}</p>
+    </div>
+  </div>
+</ion-content>
