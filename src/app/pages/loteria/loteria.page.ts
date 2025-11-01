@@ -15,7 +15,6 @@ import { Carta } from 'src/app/core/models/carta.model';
 export class LoteriaPage implements OnInit {
 
   cartas: Carta[] = [];
-  animarCarta = false;
   cartaActual?: Carta;
   cartasCantadas: Carta[] = [];
   indiceActual = 0;
@@ -25,6 +24,7 @@ export class LoteriaPage implements OnInit {
   juegoTerminado = false;
 
   audioContext: AudioContext | null = null;
+  audio: HTMLAudioElement = new Audio();
 
   constructor(private cartasService: CartasService) { }
 
@@ -33,15 +33,22 @@ export class LoteriaPage implements OnInit {
   }
 
   desbloquearAudio() {
-  if (!this.audioContext) {
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const buffer = this.audioContext.createBuffer(1, 1, 22050);
-    const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
-    source.connect(this.audioContext.destination);
-    source.start(0);
+    if (!this.audioContext) {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const buffer = this.audioContext.createBuffer(1, 1, 22050);
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.audioContext.destination);
+      source.start(0);
+    }
+
+    // 🔊 También reproduce un sonido silencioso para desbloquear la instancia
+    this.audio.src = 'assets/audios/bienvenida.mp3'; // puedes usar un sonido corto o vacío
+    this.audio.load();
+    this.audio.play().catch(() => { }); // no importa si falla, ya desbloquea el canal
+    this.audio.pause();
+    this.audio.currentTime = 0;
   }
-}
 
   resetear() {
     this.cartas = this.cartasService.barajear(this.cartasService.getCartas());
@@ -54,11 +61,10 @@ export class LoteriaPage implements OnInit {
   }
 
   async iniciarJuego() {
+    this.desbloquearAudio();
     if (this.jugando && this.pausado) {
-      this.desbloquearAudio();
       // Si estaba pausado, simplemente reanuda
       this.pausado = false;
-      this.juegoTerminado = false;
       this.reanudarIntervalo();
       return;
     }
@@ -66,6 +72,7 @@ export class LoteriaPage implements OnInit {
     // Nueva partida
     this.jugando = true;
     this.pausado = false;
+    this.juegoTerminado = false;
 
     // 🔊 Reproducir audio de bienvenida antes de empezar
     await this.reproducirBienvenida();
@@ -93,14 +100,23 @@ export class LoteriaPage implements OnInit {
   }
 
   reproducirAudio(src?: string) {
-    if (src) {
-      const audio = new Audio(src);
-      audio.play();
-    } else if (this.cartaActual) {
-      const utter = new SpeechSynthesisUtterance(this.cartaActual.nombre);
-      utter.lang = 'es-MX';
-      window.speechSynthesis.speak(utter);
+    if (!src) {
+      // 🔈 fallback usando SpeechSynthesis
+      if (this.cartaActual) {
+        const utter = new SpeechSynthesisUtterance(this.cartaActual.nombre);
+        utter.lang = 'es-MX';
+        window.speechSynthesis.speak(utter);
+      }
+      return;
     }
+
+    this.audio.pause();
+    this.audio.src = src;
+    this.audio.load();
+
+    this.audio.play().catch(err => {
+      console.warn('Error reproduciendo audio:', err);
+    });
   }
 
   pausarJuego() {
